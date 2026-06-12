@@ -24,9 +24,10 @@ export default function AdminLogin() {
     setLoading(true);
 
     try {
-      await login(username, password);
-      // Since admin APIs set an httpOnly cookie, we don't strictly need to store a token
-      // But we can store a flag
+      const data = await login(username, password);
+      if (data && data.session_id) {
+        localStorage.setItem("admin_session", data.session_id);
+      }
       localStorage.setItem("admin_logged_in", "true");
       router.push("/dashboard");
     } catch (err) {

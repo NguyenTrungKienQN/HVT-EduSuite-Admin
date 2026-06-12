@@ -54,6 +54,7 @@ export default function DashboardLayout({ children }) {
       console.error(e);
     } finally {
       localStorage.removeItem("admin_logged_in");
+      localStorage.removeItem("admin_session");
       router.push("/");
     }
   };

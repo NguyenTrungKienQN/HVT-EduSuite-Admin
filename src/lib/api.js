@@ -1,13 +1,17 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://hvtapi.io.vn/api/admin";
 
 export async function fetchJSON(endpoint, options = {}) {
-  // Try to get session cookie if we need auth
+  let adminSession = null;
+  if (typeof window !== "undefined") {
+    adminSession = localStorage.getItem("admin_session");
+  }
+
   const headers = {
     "Content-Type": "application/json",
+    ...(adminSession ? { "X-Admin-Session": adminSession } : {}),
     ...(options.headers || {}),
   };
 
-  // We add credentials to true so that secure httpOnly cookies can be sent
   const res = await fetch(`${API_BASE_URL}${endpoint}`, {
     ...options,
     headers,
