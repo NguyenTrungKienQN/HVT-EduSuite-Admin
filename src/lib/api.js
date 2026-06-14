@@ -1,21 +1,20 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://hvtapi.io.vn/api/admin";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://hvtapi.io.vn/api/v1";
 
 export async function fetchJSON(endpoint, options = {}) {
-  let adminSession = null;
+  let token = null;
   if (typeof window !== "undefined") {
-    adminSession = localStorage.getItem("admin_session");
+    token = localStorage.getItem("access_token");
   }
 
   const headers = {
     "Content-Type": "application/json",
-    ...(adminSession ? { "X-Admin-Session": adminSession } : {}),
+    ...(token ? { "Authorization": `Bearer ${token}` } : {}),
     ...(options.headers || {}),
   };
 
   const res = await fetch(`${API_BASE_URL}${endpoint}`, {
     ...options,
     headers,
-    credentials: "include", // Required to send the admin_session cookie
   });
 
   if (!res.ok) {
@@ -23,6 +22,7 @@ export async function fetchJSON(endpoint, options = {}) {
     try {
       const errorData = await res.json();
       if (errorData.detail) errorMsg = errorData.detail;
+      else if (errorData.message) errorMsg = errorData.message;
     } catch (e) {}
     throw new Error(errorMsg);
   }
@@ -30,25 +30,33 @@ export async function fetchJSON(endpoint, options = {}) {
 }
 
 export async function login(username, password) {
-  const res = await fetch(`${API_BASE_URL}/login`, {
+  const res = await fetch(`${API_BASE_URL}/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ username, password }),
-    credentials: "include",
   });
   const data = await res.json();
-  if (!res.ok) {
-    throw new Error(data.detail || "Đăng nhập thất bại");
+  if (!res.ok || data.status !== "success") {
+    throw new Error(data.detail || data.message || "Đăng nhập thất bại");
+  }
+  if (typeof window !== "undefined" && data.data) {
+    localStorage.setItem("access_token", data.data.access_token);
+    // Backward compatibility for components expecting admin_session
+    localStorage.setItem("admin_session", data.data.access_token);
   }
   return data;
 }
 
 export async function logout() {
-  return fetchJSON("/logout", { method: "POST" });
+  if (typeof window !== "undefined") {
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("admin_session");
+  }
+  return { status: "success" };
 }
 
 export async function getActiveDbInfo() {
-  return fetchJSON("/active-db-info");
+  return fetchJSON("/admin/active-db-info");
 }
 
 export async function listStudents(page = 1, pageSize = 50, q = "", lop = "") {
@@ -71,51 +79,59 @@ export async function deleteStudent(id) {
 }
 
 export async function listGraduated() {
-  return fetchJSON("/graduated");
+  return fetchJSON("/students/graduated");
 }
 
 export async function restoreGraduated(id) {
-  return fetchJSON(`/graduated/${id}/restore`, { method: "POST" });
+  return fetchJSON(`/students/graduated/${id}/restore`, { method: "POST" });
+}
+
+export async function downgradeStudent(id) {
+  return fetchJSON(`/students/${id}/downgrade`, { method: "POST" });
+}
+
+export async function transferStudent(id, payload) {
+  return fetchJSON(`/students/${id}/transfer`, { method: "POST", body: JSON.stringify(payload) });
 }
 
 export async function listUsers() {
-  return fetchJSON("/users");
+  return fetchJSON("/admin/users");
 }
 
 export async function createUser(payload) {
-  return fetchJSON("/users", { method: "POST", body: JSON.stringify(payload) });
+  return fetchJSON("/admin/users", { method: "POST", body: JSON.stringify(payload) });
 }
 
 export async function updateUser(id, payload) {
-  return fetchJSON(`/users/${id}`, { method: "PUT", body: JSON.stringify(payload) });
+  return fetchJSON(`/admin/users/${id}`, { method: "PUT", body: JSON.stringify(payload) });
 }
 
 export async function deleteUser(id) {
-  return fetchJSON(`/users/${id}`, { method: "DELETE" });
+  return fetchJSON(`/admin/users/${id}`, { method: "DELETE" });
 }
 
 export async function listClasses() {
-  return fetchJSON("/classes");
+  return fetchJSON("/admin/classes");
 }
 
 export async function getSchedule(lop) {
-  return fetchJSON(`/schedule/${encodeURIComponent(lop)}`);
+  return fetchJSON(`/schedule/${encodeURIComponent(lop)}/week`);
 }
 
 export async function updateSchedule(lop, payload) {
-  return fetchJSON(`/schedule/${encodeURIComponent(lop)}`, { method: "POST", body: JSON.stringify(payload) });
+  return fetchJSON(`/schedule/${encodeURIComponent(lop)}/week`, { method: "PUT", body: JSON.stringify(payload) });
 }
 
 export async function listPauses() {
-  return fetchJSON("/pause");
+  return fetchJSON("/attendance/pauses");
 }
 
 export async function createPause(payload) {
-  return fetchJSON("/pause", { method: "POST", body: JSON.stringify(payload) });
+  return fetchJSON("/attendance/pauses", { method: "POST", body: JSON.stringify(payload) });
 }
 
 export async function deletePause(id) {
-  return fetchJSON(`/pause/${id}`, { method: "DELETE" });
+  return fetchJSON(`/attendance/pauses/${id}`, { method: "DELETE" });
 }
 
 export async function listEvents() {
@@ -135,41 +151,47 @@ export async function deleteEvent(id) {
 }
 
 export async function listServers() {
-  return fetchJSON("/servers");
+  return fetchJSON("/admin/servers");
 }
 
 export async function createServer(payload) {
-  return fetchJSON("/servers", { method: "POST", body: JSON.stringify(payload) });
+  return fetchJSON("/admin/servers", { method: "POST", body: JSON.stringify(payload) });
 }
 
 export async function updateServer(id, payload) {
-  return fetchJSON(`/servers/${id}`, { method: "PUT", body: JSON.stringify(payload) });
+  return fetchJSON(`/admin/servers/${id}`, { method: "PUT", body: JSON.stringify(payload) });
 }
 
 export async function deleteServer(id) {
-  return fetchJSON(`/servers/${id}`, { method: "DELETE" });
+  return fetchJSON(`/admin/servers/${id}`, { method: "DELETE" });
 }
 
 export async function testServerConnection(id) {
-  return fetchJSON(`/servers/${id}/test-connection`, { method: "POST" });
+  return fetchJSON(`/admin/servers/${id}/test-connection`, { method: "POST" });
 }
 
 export async function testConfigConnection(payload) {
-  return fetchJSON("/servers/test-connection", { method: "POST", body: JSON.stringify(payload) });
+  return fetchJSON("/admin/servers/test-connection", { method: "POST", body: JSON.stringify(payload) });
 }
 
 export async function activateServer(id) {
-  return fetchJSON(`/servers/${id}/activate`, { method: "POST" });
+  return fetchJSON(`/admin/servers/${id}/activate`, { method: "POST" });
 }
 
 export async function importStudents(file) {
   const formData = new FormData();
   formData.append("file", file);
 
+  let token = localStorage.getItem("access_token");
+  const headers = {};
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
   const res = await fetch(`${API_BASE_URL}/students/import`, {
     method: "POST",
+    headers,
     body: formData,
-    credentials: "include",
   });
 
   if (!res.ok) {
@@ -177,6 +199,7 @@ export async function importStudents(file) {
     try {
       const errorData = await res.json();
       if (errorData.detail) errorMsg = errorData.detail;
+      else if (errorData.message) errorMsg = errorData.message;
     } catch (e) {}
     throw new Error(errorMsg);
   }
@@ -184,31 +207,22 @@ export async function importStudents(file) {
 }
 
 export async function upgradeSchoolYear() {
-  return fetchJSON("/upgrade-school-year", { method: "POST" });
+  return fetchJSON("/admin/upgrade-school-year", { method: "POST" });
 }
 
 export async function undoUpgradeSchoolYear() {
-  return fetchJSON("/undo-upgrade-school-year", { method: "POST" });
-}
-
-export async function downgradeStudent(id) {
-  return fetchJSON(`/students/${id}/downgrade`, { method: "POST" });
-}
-
-export async function transferStudent(id, payload) {
-  return fetchJSON(`/students/${id}/transfer`, { method: "POST", body: JSON.stringify(payload) });
+  return fetchJSON("/admin/undo-upgrade-school-year", { method: "POST" });
 }
 
 export async function listGvcn() {
-  return fetchJSON("/gvcn");
+  return fetchJSON("/admin/gvcn");
 }
 
 export async function saveGvcn(payload) {
-  return fetchJSON("/gvcn", { method: "POST", body: JSON.stringify(payload) });
+  return fetchJSON("/admin/gvcn", { method: "POST", body: JSON.stringify(payload) });
 }
 
 export async function deleteGvcn(id) {
-  return fetchJSON(`/gvcn/${id}`, { method: "DELETE" });
+  return fetchJSON(`/admin/gvcn/${id}`, { method: "DELETE" });
 }
-
 
