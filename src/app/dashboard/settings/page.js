@@ -36,8 +36,9 @@ export default function SettingsDashboard() {
 
   const fetchDbInfo = async () => {
     try {
-      const data = await getActiveDbInfo();
-      setDbInfo(data);
+      const res = await getActiveDbInfo();
+      // ApiResponse.success returns { status: "success", data: { ... } }
+      setDbInfo(res.data || res);
     } catch (err) {
       console.error(err);
     }
