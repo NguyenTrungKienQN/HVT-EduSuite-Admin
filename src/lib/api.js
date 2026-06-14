@@ -39,10 +39,10 @@ export async function login(username, password) {
   if (!res.ok || data.status !== "success") {
     throw new Error(data.detail || data.message || "Đăng nhập thất bại");
   }
-  if (typeof window !== "undefined" && data.data) {
-    localStorage.setItem("access_token", data.data.access_token);
+  if (typeof window !== "undefined" && data.access_token) {
+    localStorage.setItem("access_token", data.access_token);
     // Backward compatibility for components expecting admin_session
-    localStorage.setItem("admin_session", data.data.access_token);
+    localStorage.setItem("admin_session", data.access_token);
   }
   return data;
 }
