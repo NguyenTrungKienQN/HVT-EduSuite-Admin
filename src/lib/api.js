@@ -143,7 +143,26 @@ export async function deletePause(id) {
 }
 
 export async function listEvents() {
-  return fetchJSON("/events");
+  const classesRes = await listClasses();
+  const classes = classesRes.classes || classesRes.data || [];
+  
+  const allEvents = [];
+  await Promise.all(classes.map(async (cls) => {
+    try {
+      const className = typeof cls === "string" ? cls : (cls.lop || cls.name);
+      if (!className) return;
+      const res = await fetchJSON(`/events?lop=${encodeURIComponent(className)}`);
+      if (res.events) {
+        allEvents.push(...res.events);
+      }
+    } catch (err) {
+      console.error(`Lỗi tải sự kiện lớp ${cls.lop || cls}`, err);
+    }
+  }));
+  
+  allEvents.sort((a, b) => new Date(b.bat_dau) - new Date(a.bat_dau));
+  
+  return { status: "success", events: allEvents };
 }
 
 export async function createEvent(payload) {
