@@ -18,6 +18,14 @@ export async function fetchJSON(endpoint, options = {}) {
   });
 
   if (!res.ok) {
+    if (res.status === 401 || res.status === 403) {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("admin_session");
+        localStorage.removeItem("admin_logged_in");
+        window.location.href = "/";
+      }
+    }
     let errorMsg = `API Error ${res.status}`;
     try {
       const errorData = await res.json();
