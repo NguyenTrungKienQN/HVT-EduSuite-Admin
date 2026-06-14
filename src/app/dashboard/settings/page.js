@@ -208,8 +208,8 @@ export default function SettingsDashboard() {
           
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-white/5 border border-[var(--card-border)] rounded-2xl p-5 flex flex-col gap-1">
-              <span className={`text-2xl font-bold ${dbInfo?.latency_ms ? 'text-emerald-500' : 'text-red-500'}`}>
-                {dbInfo?.latency_ms ? `${dbInfo.latency_ms} ms` : 'Ngoại tuyến'}
+              <span className={`text-2xl font-bold ${typeof dbInfo?.latency_ms === 'number' ? 'text-emerald-500' : 'text-red-500'}`}>
+                {typeof dbInfo?.latency_ms === 'number' ? `${dbInfo.latency_ms} ms` : 'Ngoại tuyến'}
               </span>
               <span className="text-xs uppercase tracking-wider text-[var(--text-muted)] font-medium">Độ Trễ Ping</span>
             </div>
