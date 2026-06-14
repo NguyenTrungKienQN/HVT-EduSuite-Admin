@@ -25,6 +25,9 @@ export default function AdminLogin() {
 
     try {
       const data = await login(username, password);
+      if (data.role !== "admin") {
+        throw new Error("Tài khoản của bạn không có quyền truy cập trang quản trị này.");
+      }
       if (data && data.session_id) {
         localStorage.setItem("admin_session", data.session_id);
       }

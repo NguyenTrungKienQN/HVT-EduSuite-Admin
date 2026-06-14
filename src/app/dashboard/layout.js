@@ -30,7 +30,11 @@ export default function DashboardLayout({ children }) {
   const checkDbStatus = async () => {
     try {
       const info = await getActiveDbInfo();
-      if (info && info.host) {
+      // ApiResponse.success nests the actual payload inside "data"
+      if (info && info.data && info.data.host) {
+        setDbStatus("online");
+      } else if (info && info.host) {
+        // Fallback in case of old API behavior
         setDbStatus("online");
       } else {
         setDbStatus("offline");
