@@ -72,7 +72,7 @@ export default function GraduatedDashboard() {
                   <tr key={hs.id} className="hover:bg-[var(--table-hover)] transition-colors border-b border-[var(--table-border)]">
                     <td className="p-4 font-semibold">{hs.ten}</td>
                     <td className="p-4">
-                      <span className="px-3 py-1 rounded-md bg-black/5 dark:bg-white/5 border border-[var(--card-border)]">{hs.lop_cu}</span>
+                      <span className="px-3 py-1 rounded-md bg-black/5 dark:bg-white/5 border border-[var(--card-border)]">{hs.lop_cu || hs.lop}</span>
                     </td>
                     <td className="p-4"><code className="text-blue-600 dark:text-blue-400 font-medium">{hs.uid_the}</code></td>
                     <td className="p-4">{hs.gioi_tinh}</td>
